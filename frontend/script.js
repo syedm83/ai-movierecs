@@ -1,4 +1,3 @@
-// Available moods (extracted from your CSV)
 const availableMoods = [
   'drama', 'comedy', 'sci-fi', 'horror', 'thriller', 
   'action', 'crime', 'romance', 'adventure', 'animation',
@@ -40,7 +39,6 @@ function toggleMoodSelection(mood, btnElement) {
     btnElement.classList.remove('selected');
   }
   
-  // Update UI
   updateMoodButtonsState();
   document.getElementById('recommendBtn').disabled = selectedMoods.length === 0;
 }
@@ -57,12 +55,10 @@ function updateMoodButtonsState() {
 async function recommendMovies() {
   if (selectedMoods.length === 0) return;
 
-  // Combine selected moods with weights
   const query = selectedMoods.join(' ');
   const inputEmbedding = await model.embed([query]);
   const inputArray = inputEmbedding.arraySync()[0];
 
-  // Calculate similarities for FULL MOVIES (not tags)
   const moviesWithScores = await Promise.all(movieData.map(async (movie) => {
     const similarity = cosineSimilarity(inputArray, movie.embedding);
     return { 
@@ -72,9 +68,8 @@ async function recommendMovies() {
     };
   }));
 
-  // Filter and sort (minimum similarity threshold)
   const recommended = moviesWithScores
-    .filter(movie => movie.similarity > 0.2)  // Adjust threshold as needed
+    .filter(movie => movie.similarity > 0.2)  
     .sort((a, b) => b.similarity - a.similarity)
     .slice(0, 5);
 
@@ -82,7 +77,6 @@ async function recommendMovies() {
 }
 
 function cosineSimilarity(a, b) {
-  // Truncate/pad vectors to 384 dimensions
   const dim = 512;
   const processedA = a.length >= dim ? a.slice(0, dim) : [...a, ...new Array(dim - a.length).fill(0)];
   const processedB = b.length >= dim ? b.slice(0, dim) : [...b, ...new Array(dim - b.length).fill(0)];
@@ -116,20 +110,15 @@ function displayResults(movies) {
   });
 }
 
-// Initialize app
 window.onload = async () => {
   try {
-    // Load TensorFlow.js and USE
     await tf.ready();
     model = await use.load();
     
-    // Load movie data
     await loadEmbeddings();
     
-    // Create mood buttons
     createMoodButtons();
     
-    // Setup recommend button
     document.getElementById('recommendBtn').addEventListener('click', recommendMovies);
     
     console.log("App initialized successfully!");
