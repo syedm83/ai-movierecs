@@ -1,4 +1,6 @@
-# [AI Movie Recommender]{https://syedm83.github.io/ai-movierecs/}
+# AI Movie Recommender
+
+## [Try it here!](https://syedm83.github.io/ai-movierecs/)
 
 A cozy web app that recommends movies based on your mood selections using AI-powered text embeddings and cosine similarity. 
 
