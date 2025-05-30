@@ -1,31 +1,40 @@
-import os
-import pandas as pd
+import csv
 import json
-from sentence_transformers import SentenceTransformer
+import tensorflow_hub as hub
+import tensorflow as tf
 
-# Load the CSV
-df = pd.read_csv("movies.csv")
+# Load the Universal Sentence Encoder
+embed = hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
-# Prepare text
-df["tag_text"] = df["tags"].astype(str).str.lower()
+movies = []
 
-# Load model
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# Read your CSV file, skip the header, and prepare text for embedding
+with open('movies.csv', 'r', encoding='utf-8') as infile:
+    reader = csv.reader(infile)
+    next(reader)  # skip header
 
-# Embed tags
-df["embedding"] = df["tag_text"].apply(lambda x: model.encode(x))
+    for row in reader:
+        if len(row) >= 2:
+            title = row[0].strip()
+            tags = ', '.join(tag.strip() for tag in row[1:])
+            text = title + " " + tags  # combine title and tags for embedding
+            movies.append({
+                "title": title,
+                "tags": tags,
+                "text": text
+            })
 
-# Save to JSON
-movie_data = []
-for _, row in df.iterrows():
-    movie_data.append({
-        "title": row["title"],
-        "tags": row["tag_text"],
-        "embedding": row["embedding"].tolist()
-    })
+# Get embeddings for all movies
+texts = [movie["text"] for movie in movies]
+embeddings = embed(texts).numpy()
 
-with open("movie_embeddings.json", "w") as f:
-    json.dump(movie_data, f, indent=2)
+# Attach embeddings to the movie dictionaries and remove 'text' key
+for i, movie in enumerate(movies):
+    movie["embedding"] = embeddings[i].tolist()
+    del movie["text"]  # remove text field as it's no longer needed
 
-print("✅ movie_embeddings.json created at:", os.getcwd())
+# Save as JSON
+with open("movie_embeddings.json", "w", encoding='utf-8') as f:
+    json.dump(movies, f, indent=2)
 
+print(f"Processed {len(movies)} movies and saved embeddings to movie_embeddings.json")

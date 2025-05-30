@@ -58,7 +58,7 @@ async function recommendMovies() {
   if (selectedMoods.length === 0) return;
 
   // Combine selected moods with weights
-  const query = selectedMoods.join(', ');
+  const query = selectedMoods.join(' ');
   const inputEmbedding = await model.embed([query]);
   const inputArray = inputEmbedding.arraySync()[0];
 
@@ -74,7 +74,7 @@ async function recommendMovies() {
 
   // Filter and sort (minimum similarity threshold)
   const recommended = moviesWithScores
-    .filter(movie => movie.similarity > 0.1)  // Adjust threshold as needed
+    .filter(movie => movie.similarity > 0.2)  // Adjust threshold as needed
     .sort((a, b) => b.similarity - a.similarity)
     .slice(0, 5);
 
@@ -83,7 +83,7 @@ async function recommendMovies() {
 
 function cosineSimilarity(a, b) {
   // Truncate/pad vectors to 384 dimensions
-  const dim = 384;
+  const dim = 512;
   const processedA = a.length >= dim ? a.slice(0, dim) : [...a, ...new Array(dim - a.length).fill(0)];
   const processedB = b.length >= dim ? b.slice(0, dim) : [...b, ...new Array(dim - b.length).fill(0)];
   
