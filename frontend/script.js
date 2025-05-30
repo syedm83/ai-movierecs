@@ -12,6 +12,13 @@ let selectedMoods = [];
 async function loadEmbeddings() {
   const res = await fetch("movie_embeddings.json");
   movieData = await res.json();
+
+  movieData.forEach(movie => {
+    movie.tagsArray = movie.tags
+      .toLowerCase()
+      .split(/,|\•/)
+      .map(tag => tag.trim());
+  });
 }
 
 function createMoodButtons() {
@@ -59,22 +66,31 @@ async function recommendMovies() {
   const inputEmbedding = await model.embed([query]);
   const inputArray = inputEmbedding.arraySync()[0];
 
-  const moviesWithScores = await Promise.all(movieData.map(async (movie) => {
+  const recommended = movieData.map(movie => {
     const similarity = cosineSimilarity(inputArray, movie.embedding);
-    return { 
+
+    const matchedTags = selectedMoods.filter(mood =>
+      movie.tagsArray.includes(mood.toLowerCase())
+    );
+    const tagMatchBoost = matchedTags.length * 0.07;
+
+    return {
       title: movie.title,
       tags: movie.tags,
-      similarity 
+      similarity: similarity + tagMatchBoost,
+      baseSimilarity: similarity,
+      tagMatchBoost
     };
-  }));
-
-  const recommended = moviesWithScores
-    .filter(movie => movie.similarity > 0.2)  
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, 5);
+  })
+  .filter(movie => movie.similarity > 0.1) 
+  .sort((a, b) => b.similarity - a.similarity)
+  .slice(0, 5);
 
   displayResults(recommended);
 }
+
+
+
 
 function cosineSimilarity(a, b) {
   const dim = 512;
@@ -104,7 +120,6 @@ function displayResults(movies) {
       <div class="movie-card">
         <h3>${movie.title}</h3>
         <p>Tags: ${movie.tags.replace(/, /g, ' • ')}</p>
-        <p><em>Relevance: ${(movie.similarity * 100).toFixed(1)}%</em></p>
       </div>
     `;
   });
